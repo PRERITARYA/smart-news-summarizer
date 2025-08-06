@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#1A73E8"           # Blue accents for buttons/links
+backgroundColor = "#0E1117"        # Dark background
+secondaryBackgroundColor = "#1C1C1E"  # Slightly lighter dark for cards/containers
+textColor = "#FAFAFA"              # White text
+font = "sans serif"                # Clean modern font
