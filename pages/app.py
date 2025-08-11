@@ -56,6 +56,23 @@ def get_news_pulse(query):
     else:
         return []
 
+# ---------- Sentiment Interpretation Functions ----------
+def interpret_polarity(score):
+    if score < -0.3:
+        return "Negative 😞"
+    elif score > 0.3:
+        return "Positive 🙂"
+    else:
+        return "Neutral 😐"
+
+def interpret_subjectivity(score):
+    if score < 0.4:
+        return "Objective 📊"
+    elif score > 0.6:
+        return "Subjective 💬"
+    else:
+        return "Mixed 🌓"
+
 # ---------- APP TABS ----------
 tab1, tab2 = st.tabs(["📄 Summarizer", "📈 News Pulse"])
 
@@ -84,9 +101,9 @@ with tab1:
                     st.subheader("📝 Summary")
                     st.text_area("Summary", summary, height=150)
 
-                    st.subheader("📊 Sentiment")
-                    st.write(f"**Polarity:** `{sentiment.polarity:.2f}`")
-                    st.write(f"**Subjectivity:** `{sentiment.subjectivity:.2f}`")
+                    st.subheader("📊 Sentiment Analysis")
+                    st.write(f"**Polarity:** {interpret_polarity(sentiment.polarity)} ({sentiment.polarity:.2f})")
+                    st.write(f"**Subjectivity:** {interpret_subjectivity(sentiment.subjectivity)} ({sentiment.subjectivity:.2f})")
 
                     st.subheader("📌 Additional Insights")
                     st.write(f"**Original Word Count:** {len(article_text.split())}")
