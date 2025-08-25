@@ -17,26 +17,44 @@ NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets["NEWS_API_KEY"]
 st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout="wide")
 
 # --------------- THEME ------------------
-st.markdown("""
-<style>
-.stApp { background-color: #121212; color: white; }
-.stTextInput>div>div>input, .stTextArea>div>textarea, .stSelectbox>div div[data-baseweb="select"] {
-    background-color: #1e1e1e; color: white; border: 1px solid #333; border-radius: 8px; padding: 0.5rem;
-}
-.stButton>button {
-    background-color: #1a73e8; color: white; font-weight: 600; padding: 0.5rem 1.25rem;
-    border-radius: 8px; border: none;
-}
-.stButton>button:hover { background-color: #1558b0; }
-</style>
-""", unsafe_allow_html=True)
-
-# --------------- LOGIN GATE -------------
+# ✅ Take first name from session (set in login.py)
 if "name" in st.session_state:
-    st.markdown(f"### 👋 Hello, **{st.session_state.name}**!")
+    first_name = st.session_state.name.strip().split(" ")[0]
 else:
-    st.warning("User not logged in!")
-    st.stop()
+    first_name = "Guest"
+
+st.markdown(
+    f"""
+    <style>
+    @keyframes gradientAnimation {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
+    }}
+
+    .hello-text {{
+        font-size: 42px;
+        font-weight: 600;
+        font-family: 'Poppins', sans-serif;
+        text-align: center;
+        margin-top: 20px;
+    }}
+
+    .name-gradient {{
+        background: linear-gradient(270deg, #0040ff, #3399ff, #66ccff);
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientAnimation 6s ease infinite;
+    }}
+    </style>
+
+    <div class="hello-text">
+         <span class="name-gradient">Hello, {first_name}</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --------------- HELPERS ----------------
 @st.cache_resource(show_spinner=False)
@@ -103,6 +121,7 @@ def tts_audio(summary_text: str, lang_code: str = "en"):
 tab1, tab2 = st.tabs(["📄 Summarizer", "📈 News Pulse"])
 
 # ===== TAB 1: SUMMARIZER =====
+# ===== TAB 1: SUMMARIZER =====
 with tab1:
     st.subheader("📥 Enter a News Article URL or Paste Text")
     url = st.text_input("Paste your article link here:")
@@ -121,6 +140,7 @@ with tab1:
             ["English", "Hindi"],
             index=0
         )
+
     lang_code = "en" if language_choice == "English" else "hi"
 
     length_map = {
@@ -134,7 +154,12 @@ with tab1:
             st.warning("Please enter a valid article URL or paste text.")
         else:
             with st.spinner("🔄 Fetching and summarizing the article..."):
-                article_text = manual_text.strip() or extract_text(url)
+                # Select source
+                if manual_text.strip():
+                    article_text = manual_text.strip()
+                else:
+                    article_text = extract_text(url)
+
                 if not article_text or len(article_text.strip()) < 50:
                     st.error("❌ Could not extract article content. Try another link or paste text.")
                 else:
@@ -144,17 +169,32 @@ with tab1:
 
                     min_len, max_len = length_map[length_choice]
 
+                    # Adjust dynamically based on input size
+                    input_word_count = len(article_text.split())
+                    max_allowed = max(30, input_word_count // 2)
+                    max_len = min(max_len, max_allowed)
+                    min_len = min(min_len, max_len - 10) if max_len > 20 else 15
+
                     summarizer = load_summarizer()
+
                     try:
-                        summary = summarizer(
+                        summary_outputs = summarizer(
                             article_text,
                             max_length=max_len,
                             min_length=min_len,
-                            do_sample=False
-                        )[0]["summary_text"]
+                            num_beams=4,
+                            do_sample=False,
+                            truncation=True
+                        )
+
+                        if not summary_outputs or "summary_text" not in summary_outputs[0]:
+                            raise ValueError("Empty summary returned.")
+
+                        summary = summary_outputs[0]["summary_text"]
+
                     except Exception as e:
                         sentences = article_text.split(". ")
-                        summary = ". ".join(sentences[:2]).strip()
+                        summary = ". ".join(sentences[:3]).strip()
                         st.warning(f"Summarizer fallback used. ({e})")
 
                     if lang_code == "hi":
@@ -213,3 +253,4 @@ if st.button("🚪 Logout"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
+            
