@@ -26,12 +26,13 @@ pb_auth = firebase.auth()
 
 # ----- Firebase Admin (server) -----
 if not firebase_admin._apps:
-    # Convert Streamlit secrets to a normal dict
+    # Convert Streamlit secret to dict
     firebase_config = dict(st.secrets["FIREBASE"])
     
-    # Fix multiline private_key for Firebase Admin
+    # Replace escaped newlines in private_key with actual newlines
     firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
     
+    # Initialize Firebase Admin
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
 
