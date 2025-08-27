@@ -1,8 +1,8 @@
 import streamlit as st
 import pyrebase
 import firebase_admin
-import time
 from firebase_admin import credentials, firestore
+import time
 
 # ---------------- Pyrebase (client) ----------------
 pb_config = dict(st.secrets["FIREBASE_CONFIG"])
@@ -18,9 +18,14 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+# ---------------- Session Defaults ----------------
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
+
 # ---------------- CSS ----------------
 st.set_page_config(page_title="Smart News Auth", page_icon="📰", layout="centered")
-
 st.markdown("""
     <style>
     body {
@@ -135,17 +140,23 @@ def login(username, password):
         if not user_doc.exists:
             st.error("❌ Username not found.")
             return
+
         email = user_doc.to_dict()["email"]
         user = pb_auth.sign_in_with_email_and_password(email, password)
         info = pb_auth.get_account_info(user['idToken'])
         if not info['users'][0]['emailVerified']:
             st.warning("⚠️ Please verify your email first.")
             return
+
         st.session_state["authenticated"] = True
         st.session_state["username"] = username
         st.success(f"✨ Welcome {username}!")
-        st.experimental_rerun()
-        return user
+
+        time.sleep(0.5)  # small delay for smooth UX
+
+        # ✅ Redirect to app.py in pages folder
+        st.switch_page("pages/app.py")
+
     except Exception as e:
         st.error(f"❌ Login failed: {e}")
     finally:
