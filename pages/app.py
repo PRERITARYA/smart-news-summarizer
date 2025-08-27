@@ -18,8 +18,12 @@ st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout=
 
 # --------------- THEME ------------------
 # ✅ Take first name from session (set in login.py)
-if "name" in st.session_state:
-    first_name = st.session_state.name.strip().split(" ")[0]
+# --------------- THEME ------------------
+# ✅ Take username from session (set in login.py)
+if "username" in st.session_state:
+    first_name = st.session_state["username"].strip().split(" ")[0]
+elif "name" in st.session_state:
+    first_name = st.session_state["name"].strip().split(" ")[0]
 else:
     first_name = "Guest"
 
