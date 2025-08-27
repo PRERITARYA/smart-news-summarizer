@@ -1,8 +1,10 @@
+import json
 import streamlit as st
 import pyrebase
 import firebase_admin
 import time
 from firebase_admin import credentials, firestore
+
 
 #  Firebase config
 firebaseConfig = {
@@ -16,16 +18,17 @@ firebaseConfig = {
     "databaseURL": ""
 }
 
-# Initialize Pyrebase
+# ----- Pyrebase (client) -----
+firebaseConfig = st.secrets["FIREBASE_CONFIG"]
 firebase = pyrebase.initialize_app(firebaseConfig)
 pb_auth = firebase.auth()
 
-# Initialize Firebase Admin SDK
+# ----- Firebase Admin (server) -----
 if not firebase_admin._apps:
-    cred = credentials.Certificate(r"C:\Users\KIIT0001\news_summarizer_app\serviceAccountKey.json")
+    firebase_config = st.secrets["FIREBASE"]
+    cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
 
-# Firestore client
 db = firestore.client()
 
 # ---------------- CSS ----------------
@@ -235,7 +238,7 @@ def login_page():
         unsafe_allow_html=True
     )
 
-    # 🔥 Style (no black box issue)
+    #  Style (no black box issue)
     st.markdown(
         """
         <style>
