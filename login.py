@@ -3,6 +3,7 @@ import streamlit as st
 import pyrebase
 import firebase_admin
 import time
+import copy
 from firebase_admin import credentials, firestore
 
 
@@ -25,7 +26,8 @@ pb_auth = firebase.auth()
 
 # ----- Firebase Admin (server) -----
 if not firebase_admin._apps:
-    firebase_config = st.secrets["FIREBASE"]
+    # Make a copy of the secret dict
+    firebase_config = copy.deepcopy(st.secrets["FIREBASE"])
     
     # Fix multiline private_key for Firebase Admin
     firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
