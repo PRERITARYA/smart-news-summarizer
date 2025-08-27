@@ -19,23 +19,23 @@ firebaseConfig = {
     "databaseURL": ""
 }
 
-# ----- Pyrebase (client) -----
-firebaseConfig = st.secrets["FIREBASE_CONFIG"]
+# ---------------- Pyrebase (client) ----------------
+firebaseConfig = dict(st.secrets["FIREBASE_CONFIG"])
 firebase = pyrebase.initialize_app(firebaseConfig)
 pb_auth = firebase.auth()
 
-# ----- Firebase Admin (server) -----
+# ---------------- Firebase Admin (server) ----------------
 if not firebase_admin._apps:
-    # Convert Streamlit secret to plain dict
+    # Convert secret to dict
     firebase_config = dict(st.secrets["FIREBASE"])
     
-    # Fix multiline private_key
+    # Replace escaped newlines in private_key with actual newlines
     firebase_config["private_key"] = firebase_config["private_key"].replace("\\n", "\n")
     
     # Initialize Firebase Admin
     cred = credentials.Certificate(firebase_config)
     firebase_admin.initialize_app(cred)
-    
+
 # Firestore client
 db = firestore.client()
 
