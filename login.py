@@ -1,7 +1,7 @@
 import streamlit as st
 import pyrebase
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 import requests
 import time
 
@@ -192,7 +192,34 @@ def login(username, password):
         st.error(f"❌ Login failed: {e}")
     finally:
         loader.empty()
+email = st.text_input("Email")
+password = st.text_input("Password", type="password")
 
+if st.button("Login"):
+    try:
+        # ✅ Sign in with Firebase
+        user = auth.sign_in_with_email_and_password(email, password)
+
+        # ✅ Get email from response
+        email = user["email"]
+
+        # ✅ Lookup Firestore for username
+        db = firestore.client()
+        docs = db.collection("users").where("email", "==", email).get()
+
+        if docs:
+            username = docs[0].id   # or docs[0].to_dict().get("username")
+            # 🔥 Save to session
+            st.session_state["username"] = username
+
+            st.success(f"✅ Welcome back, {username}!")
+            st.switch_page("pages/app.py")
+
+        else:
+            st.error("❌ No user record found in Firestore.")
+
+    except Exception as e:
+        st.error(f"Login failed: {e}")
 # ---------------- Reset Password ----------------
 def reset_password(email):
     loader = show_loader("Sending reset link...")
