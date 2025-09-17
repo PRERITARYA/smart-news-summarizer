@@ -194,16 +194,6 @@ def login(username, password):
     finally:
         loader.empty()
 
-
-# ---------------- Login Form ----------------
-with st.form("login_form"):
-    username_input = st.text_input("👤 Username")
-    password_input = st.text_input("🔑 Password", type="password")
-    submit = st.form_submit_button("🚀 Login")
-
-    if submit:
-        login(username_input, password_input)
-
 # ---------------- Reset Password ----------------
 def reset_password(email):
     loader = show_loader("Sending reset link...")
@@ -250,12 +240,13 @@ def login_page():
 
     # ---------------- Login ----------------
     elif option == "Login":
-        with st.form("login_form2"):
-            username = st.text_input("👤 Username")
-            password = st.text_input("🔑 Password", type="password")
+        with st.form("login_form"):
+            username_input = st.text_input("👤 Username")
+            password_input = st.text_input("🔑 Password", type="password")
             submit = st.form_submit_button("🚀 Login")
-            if submit: login(username, password)
 
+        if submit:
+            login(username_input, password_input)
         # Dynamic Resend Verification Button for unverified login
         if st.session_state.get("show_resend_login", False):
             col1, col2 = st.columns([2, 1])
