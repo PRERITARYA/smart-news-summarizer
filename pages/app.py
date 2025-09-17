@@ -11,6 +11,8 @@ import trafilatura
 from newspaper import Article
 from deep_translator import GoogleTranslator
 from gtts import gTTS
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 # ---------------- CONFIG ----------------
 NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets["NEWS_API_KEY"]
@@ -20,7 +22,15 @@ st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout=
 # ✅ Take first name from session (set in login.py)
 # --------------- THEME ------------------
 # ✅ Take username from session (set in login.py)
+# Initialize Firebase Admin (only once)
+if not firebase_admin._apps:
+    cred_dict = dict(st.secrets["FIREBASE"])
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
 
+# Firestore client
+db = firestore.client()
 if "first_name" not in st.session_state:
     # fetch from Firestore using st.session_state["username"]
     username = st.session_state.get("username")
@@ -30,6 +40,7 @@ if "first_name" not in st.session_state:
             st.session_state["first_name"] = username.split()[0]
     else:
         st.session_state["first_name"] = "Guest"
+first_name = st.session_state.get("first_name", "Guest")
 st.markdown(
     f"""
     <style>
