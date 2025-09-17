@@ -230,7 +230,7 @@ def login_page():
 
             if submit:
                 signup(email, username, password)
-
+                st.session_state["first_name"] = username_input.split()[0]
         # Resend verification email (after signup)
         if st.session_state.get("show_resend_signup", False):
             col1, col2 = st.columns([2, 1])
@@ -250,7 +250,7 @@ def login_page():
 
             if submit:
                 login(username_input, password_input)  # first_name is set inside login()
-
+                st.session_state["first_name"] = username_input.split()[0]
         # Resend verification email (for unverified login)
         if st.session_state.get("show_resend_login", False):
             col1, col2 = st.columns([2, 1])
