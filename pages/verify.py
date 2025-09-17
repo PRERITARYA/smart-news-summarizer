@@ -16,8 +16,8 @@ def verify_email_action(oob_code):
     else:
         return False, res.json().get("error", {}).get("message", "Unknown error")
 
-# Get query params from URL
-query_params = st.experimental_get_query_params()
+# ✅ Use ONLY the new API
+query_params = st.query_params
 mode = query_params.get("mode", [None])[0]
 oob_code = query_params.get("oobCode", [None])[0]
 
@@ -26,7 +26,9 @@ if mode == "verifyEmail" and oob_code:
     if success:
         st.success("✅ Your email has been verified! Redirecting to app...")
         time.sleep(2)
-        st.switch_page("pages/app.py")  # redirect to your main app
+        # 👇 safer way to switch pages with query_params
+        st.query_params.clear()   # clear verification params
+        st.switch_page("pages/app.py")
     else:
         st.error(f"❌ Verification failed: {err}")
 else:
