@@ -33,7 +33,7 @@ else:
                 username = docs[0].id  # or docs[0].to_dict().get("username")
 
                 # ✅ Set session
-                st.session_state["username"] = username
+                st.session_state["first_name"] = username.split()[0]
 
                 st.success(f"✅ Welcome {username}! Redirecting to app...")
                 st.session_state["first_name"] = username.split()[0]

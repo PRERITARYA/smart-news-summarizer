@@ -184,7 +184,7 @@ def login(username, password):
             return
 
         # 4️⃣ ✅ Verified → set username in session and redirect
-        st.session_state["username"] = username
+        st.session_state["first_name"] = username.split()[0]
         st.success(f"✨ Welcome {username}!")
         time.sleep(0.5)
         st.switch_page("pages/app.py")
