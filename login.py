@@ -221,6 +221,7 @@ def login_page():
         with st.form("signup_form"):
             email = st.text_input("📧 Email")
             username = st.text_input("👤 Username")
+            st.session_state["first_name"] = username.split()[0]  
             password = st.text_input("🔑 Password", type="password")
 
             col1, col2 = st.columns([2, 1])
@@ -242,6 +243,7 @@ def login_page():
     elif option == "Login":
         with st.form("login_form"):
             username_input = st.text_input("👤 Username")
+            st.session_state["first_name"] = username.split()[0]
             password_input = st.text_input("🔑 Password", type="password")
             submit = st.form_submit_button("🚀 Login")
 

@@ -36,6 +36,8 @@ else:
                 st.session_state["username"] = username
 
                 st.success(f"✅ Welcome {username}! Redirecting to app...")
+                st.session_state["first_name"] = username.split()[0]
+
 
                 # Auto-redirect (HTML meta refresh)
                 st.markdown(

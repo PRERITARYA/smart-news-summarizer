@@ -20,16 +20,8 @@ st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout=
 # ✅ Take first name from session (set in login.py)
 # --------------- THEME ------------------
 # ✅ Take username from session (set in login.py)
-first_name = st.session_state.get("username", "Guest").split(" ")[0]
 
-st.markdown(
-    f"""
-    <h2 style='text-align:center;'>Hello, {first_name} 👋</h2>
-    """,
-    unsafe_allow_html=True
-)
-
-
+first_name = st.session_state.get("first_name", "Guest")
 st.markdown(
     f"""
     <style>
