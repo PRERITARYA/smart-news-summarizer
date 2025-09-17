@@ -12,9 +12,6 @@ from newspaper import Article
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 
-if not st.session_state.get("authenticated"):
-    st.warning("⚠️ Please login first!")
-    st.stop()
 # ---------------- CONFIG ----------------
 NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets["NEWS_API_KEY"]
 st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout="wide")
