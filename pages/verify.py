@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import time
 from firebase_admin import firestore
 
 # ✅ Firebase setup
@@ -29,13 +30,14 @@ else:
             # 🔎 Lookup Firestore for username
             docs = db.collection("users").where("email", "==", email).get()
             if docs:
-                username = docs[0].id  # Firestore document ID
+                username = docs[0].id  # or docs[0].to_dict().get("username")
 
-                # ✅ Store both username and first_name in session
-                st.session_state["username"] = username
+                # ✅ Set session
+                st.session_state["username"] = username             # store full username
+                st.session_state["first_name"] = username.split()[0]  # store first name
+                st.success(f"✅ Welcome {username}! Redirecting to app...")
                 st.session_state["first_name"] = username.split()[0]
 
-                st.success(f"✅ Welcome {st.session_state['first_name']}! Redirecting to app...")
 
                 # Auto-redirect (HTML meta refresh)
                 st.markdown(
