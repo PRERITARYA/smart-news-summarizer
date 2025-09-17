@@ -128,7 +128,6 @@ def tts_audio(summary_text: str, lang_code: str = "en"):
 tab1, tab2 = st.tabs(["📄 Summarizer", "📈 News Pulse"])
 
 # ===== TAB 1: SUMMARIZER =====
-# ===== TAB 1: SUMMARIZER =====
 with tab1:
     st.subheader("📥 Enter a News Article URL or Paste Text")
     url = st.text_input("Paste your article link here:")

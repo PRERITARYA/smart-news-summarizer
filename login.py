@@ -2,14 +2,21 @@ import streamlit as st
 import pyrebase
 import firebase_admin
 from firebase_admin import credentials, firestore
+import requests
 import time
 
-# ---------------- Pyrebase (client) ----------------
+# ---------------- Streamlit Config ----------------
+st.set_page_config(page_title="Smart News Auth", page_icon="📰", layout="centered")
+
+# ---------------- Pyrebase ----------------
 pb_config = dict(st.secrets["FIREBASE_CONFIG"])
 firebase = pyrebase.initialize_app(pb_config)
 pb_auth = firebase.auth()
 
-# ---------------- Firebase Admin (server) ----------------
+API_KEY = pb_config["apiKey"]
+OOB_URL = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={API_KEY}"
+
+# ---------------- Firebase Admin ----------------
 if not firebase_admin._apps:
     admin_config = dict(st.secrets["FIREBASE"])
     admin_config["private_key"] = admin_config["private_key"].replace("\\n", "\n")
@@ -23,9 +30,12 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "username" not in st.session_state:
     st.session_state["username"] = ""
+if "show_resend_signup" not in st.session_state:
+    st.session_state["show_resend_signup"] = False
+if "show_resend_login" not in st.session_state:
+    st.session_state["show_resend_login"] = False
 
 # ---------------- CSS ----------------
-st.set_page_config(page_title="Smart News Auth", page_icon="📰", layout="centered")
 st.markdown("""
     <style>
     body {
@@ -122,13 +132,27 @@ def signup(email, username, password):
     try:
         if db.collection("users").document(username).get().exists:
             st.error("❌ Username already taken.")
-            return
+            return None
+
         user = pb_auth.create_user_with_email_and_password(email, password)
-        pb_auth.send_email_verification(user['idToken'])
+
+        # Send verification email
+        payload = {"requestType": "VERIFY_EMAIL", "idToken": user["idToken"]}
+        requests.post(OOB_URL, json=payload)
+
         db.collection("users").document(username).set({"email": email})
-        st.success("✅ Account created! Check your inbox to verify email.")
+
+        st.success("✅ Account created! Please verify your email before login.")
+
+        # Save idToken for dynamic resend button
+        st.session_state["last_signup_user"] = user["idToken"]
+        st.session_state["show_resend_signup"] = True
+
+        return user["idToken"]
+
     except Exception as e:
         st.error(f"❌ Signup failed: {e}")
+        return None
     finally:
         loader.empty()
 
@@ -143,18 +167,25 @@ def login(username, password):
 
         email = user_doc.to_dict()["email"]
         user = pb_auth.sign_in_with_email_and_password(email, password)
+
         info = pb_auth.get_account_info(user['idToken'])
-        if not info['users'][0]['emailVerified']:
-            st.warning("⚠️ Please verify your email first.")
+        verified = info["users"][0].get("emailVerified", False)
+
+        if not verified:
+            st.warning("⚠️ Please verify your email before logging in.")
+
+            # Save idToken for dynamic resend button
+            st.session_state["last_login_user"] = user["idToken"]
+            st.session_state["show_resend_login"] = True
+
             return
 
+        # ✅ Verified → allow login
         st.session_state["authenticated"] = True
         st.session_state["username"] = username
         st.success(f"✨ Welcome {username}!")
 
-        time.sleep(0.5)  # small delay for smooth UX
-
-        # ✅ Redirect to app.py in pages folder
+        time.sleep(0.5)
         st.switch_page("pages/app.py")
 
     except Exception as e:
@@ -166,8 +197,12 @@ def login(username, password):
 def reset_password(email):
     loader = show_loader("Sending reset link...")
     try:
-        pb_auth.send_password_reset_email(email)
-        st.success("✅ Password reset email sent! Check Inbox/Spam.")
+        user_docs = db.collection("users").where("email", "==", email).get()
+        if not user_docs:
+            st.error("❌ No account found with this email.")
+        else:
+            pb_auth.send_password_reset_email(email)
+            st.success("✅ Password reset email sent! Check Inbox/Spam.")
     except Exception as e:
         st.error(f"❌ Failed to reset password: {e}")
     finally:
@@ -180,33 +215,51 @@ def login_page():
 
     option = st.radio("🔑 Select Option", ["Login", "Signup", "Forgot Password"], horizontal=True)
 
-    with st.container():
-        if option == "Signup":
-            with st.form("signup_form"):
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                email = st.text_input("📧 Email")
-                username = st.text_input("👤 Username")
-                password = st.text_input("🔑 Password", type="password")
-                submit = st.form_submit_button("✨ Create Account")
-                st.markdown("</div>", unsafe_allow_html=True)
-                if submit: signup(email, username, password)
+    # ---------------- Signup ----------------
+    if option == "Signup":
+        with st.form("signup_form"):
+            email = st.text_input("📧 Email")
+            username = st.text_input("👤 Username")
+            password = st.text_input("🔑 Password", type="password")
 
-        elif option == "Login":
-            with st.form("login_form"):
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                username = st.text_input("👤 Username")
-                password = st.text_input("🔑 Password", type="password")
-                submit = st.form_submit_button("🚀 Login")
-                st.markdown("</div>", unsafe_allow_html=True)
-                if submit: login(username, password)
+            col1, col2 = st.columns([2, 1])
+            submit = col1.form_submit_button("✨ Create Account")
+            
+            if submit:
+                signup(email, username, password)
 
-        else:
-            with st.form("reset_form"):
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                email = st.text_input("📧 Registered Email")
-                submit = st.form_submit_button("🔄 Reset Password")
-                st.markdown("</div>", unsafe_allow_html=True)
-                if submit: reset_password(email)
+        # Dynamic Resend Verification Button (appears after signup)
+        if st.session_state.get("show_resend_signup", False):
+            col1, col2 = st.columns([2, 1])
+            if col2.button("📧 Resend Email"):
+                user_id_token = st.session_state["last_signup_user"]
+                payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
+                requests.post(OOB_URL, json=payload)
+                st.info("✅ Verification email resent! Please check your inbox.")
+
+    # ---------------- Login ----------------
+    elif option == "Login":
+        with st.form("login_form"):
+            username = st.text_input("👤 Username")
+            password = st.text_input("🔑 Password", type="password")
+            submit = st.form_submit_button("🚀 Login")
+            if submit: login(username, password)
+
+        # Dynamic Resend Verification Button for unverified login
+        if st.session_state.get("show_resend_login", False):
+            col1, col2 = st.columns([2, 1])
+            if col2.button("📧 Resend Email"):
+                user_id_token = st.session_state["last_login_user"]
+                payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
+                requests.post(OOB_URL, json=payload)
+                st.info("✅ Verification email resent! Please check your inbox.")
+
+    # ---------------- Reset Password ----------------
+    else:
+        with st.form("reset_form"):
+            email = st.text_input("📧 Registered Email")
+            submit = st.form_submit_button("🔄 Reset Password")
+            if submit: reset_password(email)
 
 if __name__ == "__main__":
     login_page()
