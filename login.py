@@ -160,14 +160,18 @@ def signup(email, username, password):
 def login(username, password):
     loader = show_loader("Logging you in...")
     try:
+        # 1️⃣ Get user document from Firestore
         user_doc = db.collection("users").document(username).get()
         if not user_doc.exists:
             st.error("❌ Username not found.")
             return
 
         email = user_doc.to_dict()["email"]
+
+        # 2️⃣ Sign in with Firebase
         user = pb_auth.sign_in_with_email_and_password(email, password)
 
+        # 3️⃣ Check if email is verified
         info = pb_auth.get_account_info(user['idToken'])
         verified = info["users"][0].get("emailVerified", False)
 
@@ -177,14 +181,11 @@ def login(username, password):
             # Save idToken for dynamic resend button
             st.session_state["last_login_user"] = user["idToken"]
             st.session_state["show_resend_login"] = True
-
             return
 
-        # ✅ Verified → allow login
-        st.session_state["authenticated"] = True
+        # 4️⃣ ✅ Verified → set username in session and redirect
         st.session_state["username"] = username
         st.success(f"✨ Welcome {username}!")
-
         time.sleep(0.5)
         st.switch_page("pages/app.py")
 
@@ -192,34 +193,17 @@ def login(username, password):
         st.error(f"❌ Login failed: {e}")
     finally:
         loader.empty()
-email = st.text_input("Email")
-password = st.text_input("Password", type="password")
 
-if st.button("Login"):
-    try:
-        # ✅ Sign in with Firebase
-        user = auth.sign_in_with_email_and_password(email, password)
 
-        # ✅ Get email from response
-        email = user["email"]
+# ---------------- Login Form ----------------
+with st.form("login_form"):
+    username_input = st.text_input("👤 Username")
+    password_input = st.text_input("🔑 Password", type="password")
+    submit = st.form_submit_button("🚀 Login")
 
-        # ✅ Lookup Firestore for username
-        db = firestore.client()
-        docs = db.collection("users").where("email", "==", email).get()
+    if submit:
+        login(username_input, password_input)
 
-        if docs:
-            username = docs[0].id   # or docs[0].to_dict().get("username")
-            # 🔥 Save to session
-            st.session_state["username"] = username
-
-            st.success(f"✅ Welcome back, {username}!")
-            st.switch_page("pages/app.py")
-
-        else:
-            st.error("❌ No user record found in Firestore.")
-
-    except Exception as e:
-        st.error(f"Login failed: {e}")
 # ---------------- Reset Password ----------------
 def reset_password(email):
     loader = show_loader("Sending reset link...")
