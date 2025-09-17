@@ -21,7 +21,7 @@ st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout=
 # --------------- THEME ------------------
 # ✅ Take username from session (set in login.py)
 
-first_name = st.session_state.get("first_name")
+first_name = st.session_state.get("first_name","Guest")
 st.markdown(
     f"""
     <style>

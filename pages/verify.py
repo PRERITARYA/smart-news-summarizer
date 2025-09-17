@@ -34,7 +34,6 @@ else:
 
                 # ✅ Set session
                 st.session_state["first_name"] = username.split()[0]
-
                 st.success(f"✅ Welcome {username}! Redirecting to app...")
                 st.session_state["first_name"] = username.split()[0]
 
