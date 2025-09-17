@@ -208,11 +208,13 @@ def reset_password(email):
         st.error(f"❌ Failed to reset password: {e}")
     finally:
         loader.empty()
-
 # ---------------- UI ----------------
 def login_page():
     st.markdown("<h1 class='gradient-text'>🚀 Smart News Summarizer</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; font-size:18px; color: #bbb;'>AI Powered · Fast · Personalized</p>", unsafe_allow_html=True)
+    st.markdown(
+        "<p style='text-align:center; font-size:18px; color: #bbb;'>AI Powered · Fast · Personalized</p>",
+        unsafe_allow_html=True
+    )
 
     option = st.radio("🔑 Select Option", ["Login", "Signup", "Forgot Password"], horizontal=True)
 
@@ -225,18 +227,19 @@ def login_page():
 
             col1, col2 = st.columns([2, 1])
             submit = col1.form_submit_button("✨ Create Account")
-            
+
             if submit:
                 signup(email, username, password)
 
-        # Dynamic Resend Verification Button (appears after signup)
+        # Resend verification email (after signup)
         if st.session_state.get("show_resend_signup", False):
             col1, col2 = st.columns([2, 1])
             if col2.button("📧 Resend Email"):
-                user_id_token = st.session_state["last_signup_user"]
-                payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
-                requests.post(OOB_URL, json=payload)
-                st.info("✅ Verification email resent! Please check your inbox.")
+                user_id_token = st.session_state.get("last_signup_user")
+                if user_id_token:
+                    payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
+                    requests.post(OOB_URL, json=payload)
+                    st.info("✅ Verification email resent! Please check your inbox.")
 
     # ---------------- Login ----------------
     elif option == "Login":
@@ -245,24 +248,27 @@ def login_page():
             password_input = st.text_input("🔑 Password", type="password")
             submit = st.form_submit_button("🚀 Login")
 
-        if submit:
-            login(username_input, password_input)
-            st.session_state["first_name"] = username.split()[0]
-        # Dynamic Resend Verification Button for unverified login
+            if submit:
+                login(username_input, password_input)  # first_name is set inside login()
+
+        # Resend verification email (for unverified login)
         if st.session_state.get("show_resend_login", False):
             col1, col2 = st.columns([2, 1])
             if col2.button("📧 Resend Email"):
-                user_id_token = st.session_state["last_login_user"]
-                payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
-                requests.post(OOB_URL, json=payload)
-                st.info("✅ Verification email resent! Please check your inbox.")
+                user_id_token = st.session_state.get("last_login_user")
+                if user_id_token:
+                    payload = {"requestType": "VERIFY_EMAIL", "idToken": user_id_token}
+                    requests.post(OOB_URL, json=payload)
+                    st.info("✅ Verification email resent! Please check your inbox.")
 
     # ---------------- Reset Password ----------------
     else:
         with st.form("reset_form"):
             email = st.text_input("📧 Registered Email")
             submit = st.form_submit_button("🔄 Reset Password")
-            if submit: reset_password(email)
+            if submit:
+                reset_password(email)
+
 
 if __name__ == "__main__":
     login_page()
