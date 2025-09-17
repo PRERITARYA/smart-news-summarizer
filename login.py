@@ -221,7 +221,6 @@ def login_page():
         with st.form("signup_form"):
             email = st.text_input("📧 Email")
             username = st.text_input("👤 Username")
-            st.session_state["first_name"] = username.split()[0]
             password = st.text_input("🔑 Password", type="password")
 
             col1, col2 = st.columns([2, 1])
@@ -229,7 +228,6 @@ def login_page():
             
             if submit:
                 signup(email, username, password)
-                st.session_state["first_name"] = username.split()[0]
 
         # Dynamic Resend Verification Button (appears after signup)
         if st.session_state.get("show_resend_signup", False):
