@@ -21,7 +21,15 @@ st.set_page_config(page_title="Smart News Summarizer", page_icon="📰", layout=
 # --------------- THEME ------------------
 # ✅ Take username from session (set in login.py)
 
-first_name = st.session_state.get("first_name","Guest")
+if "first_name" not in st.session_state:
+    # fetch from Firestore using st.session_state["username"]
+    username = st.session_state.get("username")
+    if username:
+        user_doc = db.collection("users").document(username).get()
+        if user_doc.exists:
+            st.session_state["first_name"] = username.split()[0]
+    else:
+        st.session_state["first_name"] = "Guest"
 st.markdown(
     f"""
     <style>
