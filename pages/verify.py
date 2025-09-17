@@ -1,33 +1,32 @@
 import streamlit as st
-import requests
+import firebase_admin
+from firebase_admin import auth, credentials
 import time
 
-st.set_page_config(page_title="Verify Email", page_icon="✅")
+# Initialize Firebase Admin (only once)
+if not firebase_admin._apps:
+    cred = credentials.Certificate("firebase-key.json")
+    firebase_admin.initialize_app(cred)
 
-API_KEY = st.secrets["FIREBASE_CONFIG"]["apiKey"]
+st.set_page_config(page_title="Email Verification", page_icon="✅")
 
-def verify_email_action(oob_code):
-    """Call Firebase REST API to apply email verification code."""
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:update?key={API_KEY}"
-    payload = {"oobCode": oob_code}
-    res = requests.post(url, json=payload)
-    if res.status_code == 200:
-        return True, None
-    else:
-        return False, res.json().get("error", {}).get("message", "Unknown error")
+# ✅ Use the new query params API
+params = st.query_params
 
-# Get query params from URL
-query_params = st.experimental_get_query_params()
-mode = query_params.get("mode", [None])[0]
-oob_code = query_params.get("oobCode", [None])[0]
+if "oobCode" not in params:
+    st.error("⚠️ No verification code found. Please check your email link again.")
+else:
+    try:
+        oob_code = params["oobCode"]
 
-if mode == "verifyEmail" and oob_code:
-    success, err = verify_email_action(oob_code)
-    if success:
+        # Verify email with Firebase
+        auth.apply_action_code(oob_code)
+
         st.success("✅ Your email has been verified! Redirecting to app...")
         time.sleep(2)
-        st.switch_page("pages/app.py")  # redirect to your main app
-    else:
-        st.error(f"❌ Verification failed: {err}")
-else:
-    st.warning("⚠️ No verification code found. Please check your email link again.")
+
+        # ✅ Redirect without clearing query params manually
+        st.switch_page("pages/app.py")
+
+    except Exception as e:
+        st.error(f"❌ Verification failed: {str(e)}")
